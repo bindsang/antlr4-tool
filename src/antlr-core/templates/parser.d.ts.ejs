@@ -1,21 +1,35 @@
-import {CommonTokenStream, Parser, ParserRuleContext, Token} from 'antlr4';
-import {TerminalNode} from 'antlr4';
+import { CommonTokenStream, Parser, ParserRuleContext, Token } from 'antlr4'
+import { TerminalNode } from 'antlr4/tree/Tree'
 
-<% _.each(contextRules, (contextRule) => { %>
-export declare class <%= contextRule.name %> extends ParserRuleContext {
-    <% _.each(contextRule.methods, (method) => { %>
-    <%= method.name %>(): <%= method.type %>;
-    <% }); %>
+declare namespace <%= className %> {
+<%_ _.each(contextRules, (contextRule) => { %>
+class <%= contextRule.name %> extends ParserRuleContext {
+<% _.each(contextRule.members, (member) => { %>
+<%_ if (member.type === 'method') { _%>
+  <%= member.name %>(<%= member.args %>): <%= member.returnType %>
+<%_ } else { _%>
+  readonly <%= member.name %>: <%= member.returnType %>
+<%_ } _%>
+<% }) %>
 }
-<% }); %>
-
-export declare class <%= className %> extends Parser {
-    readonly ruleNames: string[];
-    readonly literalNames: string[];
-    readonly symbolicNames: string[];
-
-    constructor(input: CommonTokenStream);
-    <% _.each(methods, (method) => { %>
-    <%= method.name %>(<%= method.args %>): <%= method.type%>;
-<% }); %>
+<% }) %>
 }
+
+declare class <%= className %> extends Parser {
+  readonly grammarFileName: string
+  readonly ruleNames: string[]
+  readonly literalNames: string[]
+  readonly symbolicNames: string[]
+
+  static grammarFileName: string
+  static readonly ruleNames: string[]
+  static readonly literalNames: string[]
+  static readonly symbolicNames: string[]
+
+  constructor(input: CommonTokenStream)
+<%_ _.each(methods, (method) => { %>
+  <%= method.name %>(<%= method.args %>): <%= className %>.<%= method.type %>
+<%_ }) %>
+}
+
+export default <%= className %>

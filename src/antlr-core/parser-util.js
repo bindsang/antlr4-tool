@@ -2,7 +2,7 @@ import fs from 'fs'
 import _ from 'lodash'
 import * as util from './util.js'
 import * as vm from 'vm'
-import { fileURLToPath } from 'url'
+import { fileURLToPath, pathToFileURL } from 'url'
 import { Module } from 'module'
 
 class ModuleResolver {
@@ -20,7 +20,8 @@ class ModuleResolver {
     }
 
     async resolve () {
-        const rootModule = await this.#resolveModule(this.#mainFile)
+        const mainUrl = pathToFileURL(this.#mainFile).toString()
+        const rootModule = await this.#resolveModule(mainUrl)
         await rootModule.link(this.#resolveModule.bind(this))
         await rootModule.evaluate()
         return rootModule
@@ -154,13 +155,12 @@ export function parserMethods (parser) {
     const ruleToContextMap = ruleToContextTypeMap(parser)
     const symbols = symbolSet(parser)
 
-    const methods = util.getMethods(parser)
-    const ownMethods = _.filter(
-        methods,
+    const members = util.getMembers(parser.constructor)
+    const ownMembers = _.filter(
+        members,
         method => ruleToContextMap.has(method.name) || symbols.has(method.name)
     )
-
-    return _.map(ownMethods, method => {
+    return _.map(ownMembers, method => {
         const methodObj = {}
         methodObj.name = method.name
 
@@ -174,24 +174,6 @@ export function parserMethods (parser) {
 
         return methodObj
     })
-}
-
-/**
- *
- * @param parser
- * @returns {string[]}
- */
-export function exportedContextTypes (parser) {
-    const ParserClass = parser.constructor
-    const classCtxNames = classContextRules(ParserClass).map(rule => rule.name)
-    const instanceCtxNames = contextRuleNames(parser)
-    const ctxNames = _.union(instanceCtxNames, classCtxNames)
-
-    const exportsStatements = _.map(ctxNames, ctxType => {
-        return `exports.${ctxType} = ${ctxType};\n${ParserClass.name}.${ctxType} = ${ctxType};\n`
-    })
-
-    return exportsStatements
 }
 
 /**
@@ -209,28 +191,41 @@ export function contextObjectAst (parser) {
         const obj = {}
         obj.name = context.name
 
-        const methods = _.filter(
-            util.getMethods(context.prototype),
+        const members = _.filter(
+            util.getMembers(context),
             mth => mth !== 'depth'
         )
-        const ownMethods = _.filter(
-            methods,
-            method =>
-                ruleToContextMap.has(method.name) || symbols.has(method.name)
+        const ownMembers = _.filter(
+            members,
+            member =>
+                member.type === 'field' ||
+                ruleToContextMap.has(member.name) ||
+                symbols.has(member.name)
         )
 
-        obj.methods = _.map(ownMethods, method => {
-            const methodObj = {}
-            methodObj.name = method.name
-            methodObj.args = method.args
+        obj.members = _.map(ownMembers, member => {
+            const memberObj = {}
+            memberObj.name = member.name
+            memberObj.type = member.type
+            if (member.type === 'method') {
+                memberObj.args = member.args
 
-            if (ruleToContextMap.has(method.name)) {
-                methodObj.type = ruleToContextMap.get(method.name)
-            } else if (symbols.has(method.name)) {
-                methodObj.type = 'TerminalNode'
+                if (ruleToContextMap.has(member.name)) {
+                    memberObj.returnType = ruleToContextMap.get(member.name)
+                } else if (symbols.has(member.name)) {
+                    memberObj.returnType = 'TerminalNode'
+                }
+                if (member.list) {
+                    memberObj.returnType += '[]'
+                }
+            } else {
+                memberObj.returnType = 'Token'
             }
-
-            return methodObj
+            return memberObj
+        }).sort((a, b) => {
+            const scoreA = a.type === 'field' ? -1 : 1
+            const scoreB = b.type === 'field' ? -1 : 1
+            return scoreA - scoreB
         })
 
         return obj

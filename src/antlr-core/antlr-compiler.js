@@ -1,4 +1,3 @@
-// const child = require("child_process");
 import child from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -27,7 +26,8 @@ export class AntlrCompiler {
         this.#config = config
         this.#jar = config.antlrJar
         this.#grammarFile = config.grammarFile
-        this.#language = config.language
+        this.#language =
+            config.language === 'TypeScript' ? 'JavaScript' : config.language
         this.#outputDirectory = config.outputDirectory
     }
 
@@ -39,9 +39,9 @@ export class AntlrCompiler {
      */
     compileTypeScriptParser (grammar, parser) {
         const className = `${grammar}Parser`
-        const dest = `${this.#outputDirectory}/${className}.d.ts`
+        const dest = path.join(this.#outputDirectory, className + '.d.ts')
         const template = fs
-            .readFileSync(`${__dirname}/templates/parser.d.ts.ejs`)
+            .readFileSync(path.join(__dirname, 'templates', 'parser.d.ts.ejs'))
             .toString()
         const contextRules = parserUtil.contextObjectAst(parser)
         const methods = parserUtil.parserMethods(parser)
@@ -75,50 +75,36 @@ export class AntlrCompiler {
      */
     compileTypeScriptListener (grammar, parser) {
         const className = `${grammar}Listener`
-        const dest = `${this.#outputDirectory}/${className}.d.ts`
+        const dest = path.join(this.#outputDirectory, className + '.d.ts')
         const template = fs
-            .readFileSync(`${__dirname}/templates/listener.d.ts.ejs`)
+            .readFileSync(
+                path.join(__dirname, 'templates', 'listener.d.ts.ejs')
+            )
             .toString()
         const map = parserUtil.ruleToContextTypeMap(parser)
-
-        const methods = _.flatten(
-            _.map(parser.ruleNames, rule => {
-                const enterMethodName = `enter${this.capitalize(rule)}`
-                const exitMethodName = `enter${this.capitalize(rule)}`
-                const paramTypeName = `P.${map.get(rule)}`
-                return [
-                    `${enterMethodName}(ctx: ${paramTypeName}): void;`,
-                    `${exitMethodName}(ctx: ${paramTypeName}): void;`
-                ]
-            })
-        )
-
-        // const imports = _.flatten(
-        //     _.map(parser.ruleNames, rule => {
-        //         if (grammar.indexOf('Parser') === -1) {
-        //             return `import {${map.get(
-        //                 rule
-        //             )}} from './${grammar}Parser';`
-        //         } else {
-        //             return `import {${map.get(rule)}} from './${grammar}';`
-        //         }
-        //     })
-        // )
-
-        const imports = []
-        if (grammar.indexOf('Parser') === -1) {
-            imports.push(`import P from './${grammar}Parser';`)
-        } else {
-            imports.push(`import P from './${grammar}';`)
-        }
-
-        const contents = ejs.render(template, {
-            _: _,
-            className: className,
-            methods: methods,
-            imports
+        const imports = [
+            {
+                import: grammar,
+                from: grammar.endsWith('Parser')
+                    ? `./${grammar}`
+                    : `./${grammar}Parser`
+            }
+        ]
+        const methods = _.map(parser.ruleNames, rule => {
+            const capitializeRule = this.capitalize(rule)
+            const enter = 'enter' + capitializeRule
+            const exit = 'exit' + capitializeRule
+            const argType = grammar + '.' + map.get(rule)
+            const returnType = 'void'
+            return { enter, exit, argType, returnType }
         })
-
+        const contents = ejs.render(template, {
+            _,
+            capitalize: this.capitalize,
+            imports,
+            className,
+            methods
+        })
         fs.writeFileSync(dest, contents)
 
         return dest
@@ -132,42 +118,33 @@ export class AntlrCompiler {
      */
     compileTypeScriptVisitor (grammar, parser) {
         const className = `${grammar}Visitor`
-        const dest = `${this.#outputDirectory}/${className}.d.ts`
+        const dest = path.join(this.#outputDirectory, className + '.d.ts')
         const template = fs
-            .readFileSync(`${__dirname}/templates/visitor.d.ts.ejs`)
+            .readFileSync(path.join(__dirname, 'templates', 'visitor.d.ts.ejs'))
             .toString()
         const map = parserUtil.ruleToContextTypeMap(parser)
 
-        const methods = _.flatten(
-            _.map(parser.ruleNames, rule => {
-                const methodName = `visit${this.capitalize(rule)}`
-                const paramTypeName = `P.${map.get(rule)}`
-                return [`${methodName}(ctx: ${paramTypeName}): void;`]
-            })
-        )
-
-        // const imports = _.flatten(
-        //     _.map(parser.ruleNames, rule => {
-        //         if (grammar.indexOf('Parser') === -1) {
-        //             return `import P from './${grammar}Parser';`
-        //         } else {
-        //             return `import P from './${grammar}';`
-        //         }
-        //     })
-        // )
-
-        const imports = []
-        if (grammar.indexOf('Parser') === -1) {
-            imports.push(`import P from './${grammar}Parser';`)
-        } else {
-            imports.push(`import P from './${grammar}';`)
-        }
+        const imports = [
+            {
+                import: grammar,
+                from: grammar.endsWith('Parser')
+                    ? `./${grammar}`
+                    : `./${grammar}Parser`
+            }
+        ]
+        const methods = _.map(parser.ruleNames, rule => {
+            return {
+                name: 'visit' + this.capitalize(rule),
+                argType: grammar + '.' + map.get(rule),
+                returnType: 'void'
+            }
+        })
 
         const contents = ejs.render(template, {
-            _: _,
+            _,
+            imports,
             className: className,
-            methods: methods,
-            imports
+            methods: methods
         })
 
         fs.writeFileSync(dest, contents)
@@ -182,22 +159,22 @@ export class AntlrCompiler {
      */
     compileTypeScriptLexer (grammar, lexer) {
         const className = `${grammar}Lexer`
-        const dest = `${this.#outputDirectory}/${className}.d.ts`
+        const dest = path.join(this.#outputDirectory, className + '.d.ts')
         const template = fs
-            .readFileSync(`${__dirname}/templates/lexer.d.ts.ejs`)
+            .readFileSync(path.join(__dirname, 'templates', 'lexer.d.ts.ejs'))
             .toString()
 
         const fields = _.flatten(
             _.map(lexer.constructor.ruleNames, rule => {
-                return [`static ${rule}: number;`]
+                return [`static readonly ${rule}: number`]
             })
         )
-        fields.push('static EOF: number;')
+        fields.push('static readonly EOF: number')
 
         const contents = ejs.render(template, {
             _: _,
             className: className,
-            fields: fields
+            ruleNames: lexer.constructor.ruleNames
         })
 
         fs.writeFileSync(dest, contents)
@@ -205,92 +182,97 @@ export class AntlrCompiler {
         return dest
     }
 
-    async compileTypeScript () {
-        const jsCompliedResults = this.compileJavaScript()
-        const grammar = jsCompliedResults.grammar
-        const parserFile = `${this.#outputDirectory}/${grammar}Parser.js`
+    /**
+     *
+     * @param {{ grammar: string, filesGenerated: string[] }} compliedResults
+     * @returns
+     */
+    async compileTypeScript (compliedResults) {
+        const grammar = compliedResults.grammar
+        const parserFile = path.join(
+            this.#outputDirectory,
+            grammar + 'Parser.js'
+        )
 
         if (fs.existsSync(parserFile)) {
-            let parser = await parserUtil.readParser(grammar, parserFile)
-            const lines = parserUtil.exportedContextTypes(parser)
-
-            _.each(lines, line => {
-                fs.appendFileSync(parserFile, line)
-            })
-
-            // Read Again
-            parser = await parserUtil.readParser(grammar, parserFile)
-
+            const parser = await parserUtil.readParser(grammar, parserFile)
             if (this.#config.listener) {
-                if (
-                    fs.existsSync(
-                        `${this.#outputDirectory}/${grammar}Listener.js`
+                let actualGrammar
+                let listenerFile = path.join(
+                    this.#outputDirectory,
+                    grammar + 'Listener.js'
+                )
+                if (fs.existsSync(listenerFile)) {
+                    actualGrammar = grammar
+                } else {
+                    listenerFile = path.join(
+                        this.#outputDirectory,
+                        grammar + 'ParserListener.js'
                     )
-                ) {
-                    const listenerFile = this.compileTypeScriptListener(
-                        grammar,
+                    if (fs.existsSync(listenerFile)) {
+                        actualGrammar = grammar + 'Parser'
+                    }
+                }
+
+                if (actualGrammar) {
+                    const listenerDefFile = this.compileTypeScriptListener(
+                        actualGrammar,
                         parser
                     )
-                    jsCompliedResults.filesGenerated.push(listenerFile)
-                } else if (
-                    fs.existsSync(
-                        `${this.#outputDirectory}/${grammar}ParserListener.js`
-                    )
-                ) {
-                    const listenerFile = this.compileTypeScriptListener(
-                        `${grammar}Parser`,
-                        parser
-                    )
-                    jsCompliedResults.filesGenerated.push(listenerFile)
+                    compliedResults.filesGenerated.push(listenerDefFile)
                 }
             }
 
             if (this.#config.visitor) {
-                if (
-                    fs.existsSync(
-                        `${this.#outputDirectory}/${grammar}Visitor.js`
+                let actualGrammar
+                let visitorFile = path.join(
+                    this.#outputDirectory,
+                    grammar + 'Visitor.js'
+                )
+                if (fs.existsSync(visitorFile)) {
+                    actualGrammar = grammar
+                } else {
+                    visitorFile = path.join(
+                        this.#outputDirectory,
+                        grammar + 'ParserVisitor.js'
                     )
-                ) {
-                    const listenerFile = this.compileTypeScriptVisitor(
-                        grammar,
+                    if (fs.existsSync(visitorFile)) {
+                        actualGrammar = grammar + 'Parser'
+                    }
+                }
+                if (actualGrammar) {
+                    const visitorDefFile = this.compileTypeScriptVisitor(
+                        actualGrammar,
                         parser
                     )
-                    jsCompliedResults.filesGenerated.push(listenerFile)
-                } else if (
-                    fs.existsSync(
-                        `${this.#outputDirectory}/${grammar}ParserVisitor.js`
-                    )
-                ) {
-                    const listenerFile = this.compileTypeScriptVisitor(
-                        `${grammar}Parser`,
-                        parser
-                    )
-                    jsCompliedResults.filesGenerated.push(listenerFile)
+                    compliedResults.filesGenerated.push(visitorDefFile)
                 }
             }
 
-            const lexerFile = `${this.#outputDirectory}/${grammar}Lexer.js`
+            const lexerFile = path.join(
+                this.#outputDirectory,
+                grammar + 'Lexer.js'
+            )
             let lexer = await parserUtil.readLexer(grammar, lexerFile)
             const lexerPath = this.compileTypeScriptLexer(grammar, lexer)
-            jsCompliedResults.filesGenerated.push(lexerPath)
+            compliedResults.filesGenerated.push(lexerPath)
 
             const parserPath = this.compileTypeScriptParser(grammar, parser)
-            jsCompliedResults.filesGenerated.push(parserPath)
+            compliedResults.filesGenerated.push(parserPath)
         }
 
-        return jsCompliedResults
+        return compliedResults
     }
 
     /**
      *
-     * @returns {Promise<{ grammar: string, filesGenerated: string[] }>}
+     * @returns {{ grammar: string, filesGenerated: string[] }}
      */
-    compileJavaScript () {
+    compile () {
         const dir = path.dirname(this.#grammarFile)
         const baseGrammarName = path
             .basename(this.#grammarFile)
             .replace('.g4', '')
-        const grammarPrefix = _.first(`${baseGrammarName}`.split(/(?=[A-Z])/))
         /** @type { string[]} */
         let filesGenerated
         let grammar
@@ -307,20 +289,27 @@ export class AntlrCompiler {
                 console.info(cmd)
             }
 
-            const files = fs.readdirSync(this.#outputDirectory)
-            filesGenerated = _.filter(files, file =>
+            /** @type {string[]} */
+            const extensions = [
+                ...this.#config.extensions,
+                '.interp',
+                '.tokens'
+            ]
+            filesGenerated = _.filter(
+                fs.readdirSync(this.#outputDirectory),
+                file => extensions.some(ext => file.endsWith(ext))
+            )
+
+            filesGenerated = _.filter(filesGenerated, file =>
                 file.startsWith(baseGrammarName, 0)
             )
-            filesGenerated = filesGenerated.filter(
-                file =>
-                    (file.indexOf('Listener.') !== -1 &&
-                        this.#config.listener) ||
-                    file.indexOf('Listener.') === -1
+            filesGenerated = _.filter(
+                filesGenerated,
+                file => !file.includes('Listener.') || this.#config.listener
             )
-            filesGenerated = filesGenerated.filter(
-                file =>
-                    (file.indexOf('Visitor.') !== -1 && this.#config.visitor) ||
-                    file.indexOf('Visitor.') === -1
+            filesGenerated = _.filter(
+                filesGenerated,
+                file => !file.includes('Visitor.') || this.#config.visitor
             )
 
             const list = _.filter(filesGenerated, file =>

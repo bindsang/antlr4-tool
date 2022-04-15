@@ -1,19 +1,22 @@
-import {CommonTokenStream, ParserRuleContext, Token} from 'antlr4';
-import {ErrorNode, ParseTreeListener, TerminalNode} from 'antlr4/tree/Tree';
-<% _.each(imports, (importStatement) => { %>
-<%- importStatement %>
-<% }); %>
+import { CommonTokenStream, ParserRuleContext, Token } from 'antlr4'
+import { ErrorNode, ParseTreeListener, TerminalNode } from 'antlr4/tree/Tree'
+<%_ _.each(imports, (i) => { _%>
+import <%- i.import %> from '<%= i.from %>'
+<%_ }); _%>
 
-export declare class <%= className %> implements ParseTreeListener {
-    constructor();
-    <% _.each(methods, (method) => { %>
-    <%= method %>
-    <% }); %>
-    visitTerminal(node: TerminalNode): void;
+export default class <%= className %> implements ParseTreeListener {
+  constructor();
 
-    visitErrorNode(node: ErrorNode): void;
+  visitTerminal (node: TerminalNode): void
 
-    enterEveryRule(node: ParserRuleContext): void;
+  visitErrorNode (node: ErrorNode): void
 
-    exitEveryRule(node: ParserRuleContext): void;
+  enterEveryRule (node: ParserRuleContext): void
+
+  exitEveryRule(node: ParserRuleContext): void
+<% _.each(methods, (method) => { %>
+  <%= method.enter %> (ctx: <%= method.argType %>): <%= method.returnType %>
+
+  <%= method.exit %> (ctx: <%= method.argType %>): <%= method.returnType %>
+<%_ }) _%>
 }

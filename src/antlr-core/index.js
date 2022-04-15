@@ -29,7 +29,6 @@ async function compileWithFunction (config, compileFunction) {
 
         const compiler = new AntlrCompiler(opts)
         const results = await compileFunction(compiler)
-
         if (!_.isNil(compiledResults[results.grammar])) {
             _.each(results.filesGenerated, val => {
                 compiledResults[results.grammar].push(val)
@@ -47,37 +46,40 @@ async function compileWithFunction (config, compileFunction) {
     return compiledResults
 }
 
-async function compileGrammarAsJavaScript (config) {
-    return compileWithFunction(config, async compiler =>
-        compiler.compileJavaScript()
-    )
+async function compileGrammar (config) {
+    return compileWithFunction(config, async compiler => compiler.compile())
 }
 
 async function compileGrammarAsTypeScript (config) {
     config = _.clone(config)
 
-    // Define the language as JavaScript for the Antlr4 Jar
-    config.language = 'JavaScript'
-    return compileWithFunction(config, async compiler =>
-        compiler.compileTypeScript()
-    )
+    return compileWithFunction(config, async compiler => {
+        const compliedResults = compiler.compile()
+        await compiler.compileTypeScript(compliedResults)
+        return compliedResults
+    })
 }
 
 export async function compile (config) {
     config.outputDirectory = path.resolve(config.outputDirectory)
 
-    switch (config.language) {
+    const lower = config.language.toLowerCase()
+    switch (lower) {
         case 'js':
         case 'javascript':
-        case 'JavaScript':
             config.language = 'JavaScript'
-            return compileGrammarAsJavaScript(config)
+            config.extensions = ['.js']
+            return compileGrammar(config)
         case 'ts':
         case 'typescript':
-        case 'TypeScript':
             config.language = 'TypeScript'
+            config.extensions = ['.js', '.d.ts']
             return compileGrammarAsTypeScript(config)
-
+        case 'py3':
+        case 'python3':
+            config.language = 'Python3'
+            config.extensions = ['.py']
+            return compileGrammar(config)
         default:
             throw new Error(`Unsupported Language: ${config.language}`)
     }

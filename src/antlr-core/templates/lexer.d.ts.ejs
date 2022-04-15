@@ -1,16 +1,16 @@
-import {InputStream, Lexer} from 'antlr4';
+import { InputStream, Lexer } from 'antlr4'
 
-export declare class <%= className %> extends Lexer {
-    readonly channelNames: string[];
-    readonly modeNames: string[];
-    readonly literalNames: string[];
-    readonly symbolicNames: string[];
-    readonly ruleNames: string[];
-    readonly grammarFileName: string;
+export default class <%= className %> extends Lexer {
+  static readonly channelNames: string[]
+  static readonly modeNames: string[]
+  static readonly literalNames: string[]
+  static readonly symbolicNames: string[]
+  static readonly ruleNames: string[]
+  static readonly grammarFileName: string
 
-    constructor(input: InputStream);
-
-    <% _.each(fields, (field) => { %>
-    <%= field %>
-    <% }); %>
+  constructor(input: InputStream)
+<%_ _.each(ruleNames, (rule) => { %>
+  static readonly <%= rule %>: number
+<%_ }) %>
+  static EOF: number
 }
