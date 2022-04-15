@@ -178,21 +178,21 @@ export function parserMethods (parser) {
 
 /**
  * Return all modules AST of all the rules
- * @param parser
+ * @param {any} parser
  * @returns [...,{id: string, type: string}]
  */
 export function contextObjectAst (parser) {
-    const types = classContextRules(parser.constructor)
+    const contextTypes = classContextRules(parser.constructor)
     const ruleToContextMap = ruleToContextTypeMap(parser)
     const symbols = symbolSet(parser)
-    const rules = contextRuleNames(parser)
 
-    return _.map(types, context => {
+    return _.map(contextTypes, contexType => {
         const obj = {}
-        obj.name = context.name
+        const content = contexType.toString()
+        obj.name = contexType.name
 
         const members = _.filter(
-            util.getMembers(context),
+            util.getMembers(contexType),
             mth => mth !== 'depth'
         )
         const ownMembers = _.filter(
@@ -219,7 +219,12 @@ export function contextObjectAst (parser) {
                     memberObj.returnType += '[]'
                 }
             } else {
-                memberObj.returnType = 'Token'
+                /** @type {string} */
+                const pattern = new RegExp(
+                    `this\\.${member.name}\\s*=\\s*null.+?(\\w+)$`, 'im'
+                )
+                const matcher = pattern.exec(content)
+                memberObj.returnType = matcher[1]
             }
             return memberObj
         }).sort((a, b) => {

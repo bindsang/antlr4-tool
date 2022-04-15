@@ -43,6 +43,7 @@ export class AntlrCompiler {
         const template = fs
             .readFileSync(path.join(__dirname, 'templates', 'parser.d.ts.ejs'))
             .toString()
+
         const contextRules = parserUtil.contextObjectAst(parser)
         const methods = parserUtil.parserMethods(parser)
 
@@ -278,7 +279,7 @@ export class AntlrCompiler {
         let grammar
 
         chdir(dir, () => {
-            child.execSync('which java')
+            // child.execSync('which java')
 
             const cmd = this.command()
             try {
