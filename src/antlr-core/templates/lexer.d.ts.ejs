@@ -9,4 +9,8 @@ export declare class <%= className %> extends Lexer {
     readonly grammarFileName: string;
 
     constructor(input: InputStream);
+
+    <% _.each(fields, (field) => { %>
+    <%= field %>
+    <% }); %>
 }

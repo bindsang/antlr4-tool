@@ -8,3 +8,5 @@ lib
 *.tgz
 dist
 *.iml
+yarn.lock
+package-lock.json

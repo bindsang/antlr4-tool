@@ -1,5 +1,5 @@
 import {CommonTokenStream, Parser, ParserRuleContext, Token} from 'antlr4';
-import {TerminalNode} from 'antlr4/tree/Tree';
+import {TerminalNode} from 'antlr4';
 
 <% _.each(contextRules, (contextRule) => { %>
 export declare class <%= contextRule.name %> extends ParserRuleContext {
