@@ -3,14 +3,15 @@
   "version": "1.1.2",
   "description": "An Antlr4 tool that generates both Typescript and JavaScript Antlr Parsers (Current Antlr version: 4.8)",
   "main": "src/index.js",
-  "types": "dist/index.d.ts",
   "type": "module",
   "bin": {
-    "mctech-antlr4-tool": "src/app.js",
-    "mctech-antlr4.js": "src/app.js"
+    "mctech-antlr4": "src/app.js"
+  },
+  "engines": {
+    "node": ">=14"
   },
   "scripts": {
-    "test": "bash -c 'node --experimental-import-meta-resolve --experimental-vm-modules ./src/cli.js -l ts -o ./src/test ./samples/c/C.g4'"
+    "test": "node --experimental-import-meta-resolve --experimental-vm-modules ./src/cli.js -l ts -o ./src/test ./samples/c/C.g4"
   },
   "files": [
     "src",
