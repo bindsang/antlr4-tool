@@ -151,7 +151,7 @@ export function symbolSet (parser) {
     return set
 }
 
-export function parserMethods (parser) {
+export function parserMembers (parser) {
     const ruleToContextMap = ruleToContextTypeMap(parser)
     const symbols = symbolSet(parser)
 

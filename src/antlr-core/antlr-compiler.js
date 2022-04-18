@@ -45,13 +45,14 @@ export class AntlrCompiler {
             .toString()
 
         const contextRules = parserUtil.contextObjectAst(parser)
-        const methods = parserUtil.parserMethods(parser)
+        const methods = parserUtil.parserMembers(parser)
 
         const contents = ejs.render(template, {
             _,
             contextRules,
             className,
-            methods
+            methods,
+            symbolicNames: parser.constructor.symbolicNames.filter(s => !!s)
         })
 
         fs.writeFileSync(dest, contents)

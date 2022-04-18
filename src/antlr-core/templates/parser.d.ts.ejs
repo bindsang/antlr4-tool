@@ -2,17 +2,17 @@ import { CommonTokenStream, Parser, ParserRuleContext, Token } from 'antlr4'
 import { TerminalNode } from 'antlr4/tree/Tree'
 
 declare namespace <%= className %> {
-<%_ _.each(contextRules, (contextRule) => { %>
-class <%= contextRule.name %> extends ParserRuleContext {
-<% _.each(contextRule.members, (member) => { %>
-<%_ if (member.type === 'method') { _%>
-  <%= member.name %>(<%= member.args %>): <%= member.returnType %>
-<%_ } else { _%>
-  readonly <%= member.name %>: <%= member.returnType %>
-<%_ } _%>
-<% }) %>
-}
-<% }) %>
+  <%_ _.each(contextRules, (contextRule) => { %>
+  class <%= contextRule.name %> extends ParserRuleContext {
+  <% _.each(contextRule.members, (member) => { %>
+  <%_ if (member.type === 'method') { _%>
+    <%= member.name %>(<%= member.args %>): <%= member.returnType %>
+  <%_ } else { _%>
+    readonly <%= member.name %>: <%= member.returnType %>
+  <%_ } _%>
+  <% }) %>
+  }
+  <% }) %>
 }
 
 declare class <%= className %> extends Parser {
@@ -27,9 +27,12 @@ declare class <%= className %> extends Parser {
   static readonly symbolicNames: string[]
 
   constructor(input: CommonTokenStream)
-<%_ _.each(methods, (method) => { %>
-  <%= method.name %>(<%= method.args %>): <%= className %>.<%= method.type %>
-<%_ }) %>
+    <%_ _.each(symbolicNames, (sym) => { %>
+    static readonly <%= sym %>: number
+    <%_ }) %>
+    <%_ _.each(methods, (method) => { %>
+    <%= method.name %>(<%= method.args %>): <%= className %>.<%= method.type %>
+    <%_ }) %>
 }
 
 export default <%= className %>

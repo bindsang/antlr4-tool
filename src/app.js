@@ -1,2 +1,4 @@
 #!/usr/bin/env node
-require('./cli')
+
+// copy to dist
+import './cli.js'
