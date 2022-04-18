@@ -2,6 +2,7 @@ import child from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import ejs from 'ejs'
+import os from 'os'
 import _ from 'lodash'
 import { fileURLToPath } from 'url'
 import * as parserUtil from './parser-util.js'
@@ -280,8 +281,6 @@ export class AntlrCompiler {
         let grammar
 
         chdir(dir, () => {
-            // child.execSync('which java')
-
             const cmd = this.command()
             try {
                 child.execSync(cmd).toString()
@@ -324,9 +323,8 @@ export class AntlrCompiler {
             }
 
             // Set the absolute paths on all the files
-            filesGenerated = _.map(
-                filesGenerated,
-                file => `${this.#outputDirectory}/${file}`
+            filesGenerated = _.map(filesGenerated, file =>
+                path.join(this.#outputDirectory, file)
             )
         })
 
