@@ -221,10 +221,15 @@ export function contextObjectAst (parser) {
             } else {
                 /** @type {string} */
                 const pattern = new RegExp(
-                    `this\\.${member.name}\\s*=\\s*null.+?(\\w+)$`, 'im'
+                    `this\\.${member.name}\\s*=\\s*(null|\\[]);.+?//\\s+(of\\s+)?(\\w+)$`,
+                    'im'
                 )
                 const matcher = pattern.exec(content)
-                memberObj.returnType = matcher[1]
+                let memberType = matcher[3]
+                memberObj.returnType =
+                    matcher[1] === 'null'
+                        ? memberType
+                        : memberType.substring(0, memberType.length - 1) + '[]'
             }
             return memberObj
         }).sort((a, b) => {
