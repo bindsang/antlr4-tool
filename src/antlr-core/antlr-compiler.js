@@ -53,7 +53,8 @@ export class AntlrCompiler {
             contextRules,
             className,
             methods,
-            symbolicNames: parser.constructor.symbolicNames.filter(s => !!s)
+            symbolicNames: parser.constructor.symbolicNames.filter(s => !!s),
+            ruleNames: parser.constructor.ruleNames.filter(s => !!s)
         })
 
         fs.writeFileSync(dest, contents)

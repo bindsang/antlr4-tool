@@ -30,6 +30,9 @@ declare class <%= className %> extends Parser {
     <%_ _.each(symbolicNames, (sym) => { %>
     static readonly <%= sym %>: number
     <%_ }) %>
+    <%_ _.each(ruleNames, (rule) => { %>
+    static readonly RULE_<%= rule %>: number
+    <%_ }) %>
     <%_ _.each(methods, (method) => { %>
     <%= method.name %>(<%= method.args %>): <%= className %>.<%= method.type %>
     <%_ }) %>
