@@ -132,6 +132,27 @@ export function contextToRuleMap (parser) {
     return map
 }
 
+export function ruleAndLabelContextTypeMap (parser) {
+    const map = ruleToContextTypeMap(parser)
+    const list = classContextRules(parser.constructor)
+    const ruleClsList = [...map.values()]
+    const labels = []
+    for (const cls of list) {
+        const clsName = cls.name
+        if (ruleClsList.includes(clsName)) {
+            continue
+        }
+
+        // '#' 定义的label 类
+        if (cls.name.endsWith('Context')) {
+            const label = clsName.replace(/Context$/, '')
+            map.set(label, clsName)
+            labels.push(label)
+        }
+    }
+    return [map, labels]
+}
+
 export function ruleToContextTypeMap (parser) {
     const map = new Map()
     _.each(parser.ruleNames, rule => {
@@ -221,7 +242,7 @@ export function contextObjectAst (parser) {
             } else {
                 /** @type {string} */
                 const pattern = new RegExp(
-                    `this\\.${member.name}\\s*=\\s*(null|\\[]);.+?//\\s+(of\\s+)?(\\w+)$`,
+                    `this\\.${member.name}\\s*=\\s*(null|\\[]);.+?//\\s+(of\\s+)?(\\w+);?$`,
                     'im'
                 )
                 const matcher = pattern.exec(content)

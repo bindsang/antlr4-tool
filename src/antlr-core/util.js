@@ -17,7 +17,7 @@ const ignores = [
 
 export function getMembers (cls) {
     const result = []
-    const inst = new cls()
+    const inst = new cls(null, {})
     const props = [
         ...Object.keys(inst),
         ...Object.getOwnPropertyNames(cls.prototype)

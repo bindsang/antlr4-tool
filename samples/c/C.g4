@@ -247,8 +247,8 @@ structOrUnionSpecifier
     ;
 
 structOrUnion
-    :   'struct'
-    |   'union'
+    :   'struct'  # struct
+    |   'union'   # union
     ;
 
 structDeclarationList

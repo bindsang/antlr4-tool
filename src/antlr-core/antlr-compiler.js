@@ -85,7 +85,7 @@ export class AntlrCompiler {
                 path.join(__dirname, 'templates', 'listener.d.ts.ejs')
             )
             .toString()
-        const map = parserUtil.ruleToContextTypeMap(parser)
+        const [map, labels] = parserUtil.ruleAndLabelContextTypeMap(parser)
         const imports = [
             {
                 import: grammar,
@@ -94,7 +94,7 @@ export class AntlrCompiler {
                     : `./${grammar}Parser`
             }
         ]
-        const methods = _.map(parser.ruleNames, rule => {
+        const methods = _.map([...parser.ruleNames, ...labels], rule => {
             const capitializeRule = this.capitalize(rule)
             const enter = 'enter' + capitializeRule
             const exit = 'exit' + capitializeRule
@@ -126,7 +126,7 @@ export class AntlrCompiler {
         const template = fs
             .readFileSync(path.join(__dirname, 'templates', 'visitor.d.ts.ejs'))
             .toString()
-        const map = parserUtil.ruleToContextTypeMap(parser)
+        const [map, labels] = parserUtil.ruleAndLabelContextTypeMap(parser)
 
         const imports = [
             {
@@ -136,7 +136,7 @@ export class AntlrCompiler {
                     : `./${grammar}Parser`
             }
         ]
-        const methods = _.map(parser.ruleNames, rule => {
+        const methods = _.map([...parser.ruleNames, ...labels], rule => {
             return {
                 name: 'visit' + this.capitalize(rule),
                 argType: grammar + '.' + map.get(rule),
