@@ -48,8 +48,18 @@ export class AntlrCompiler {
         const contextRules = parserUtil.contextObjectAst(parser)
         const methods = parserUtil.parserMembers(parser)
 
+        const clsType = contextRules.find(
+            item => !contextRules.find(c => item.superName === c.name)
+        )
+
+        const imports = []
+        if (clsType.superName !== 'ParserRuleContext') {
+            imports.push(clsType.superName)
+        }
+
         const contents = ejs.render(template, {
             _,
+            imports,
             contextRules,
             className,
             methods,
@@ -85,7 +95,6 @@ export class AntlrCompiler {
                 path.join(__dirname, 'templates', 'listener.d.ts.ejs')
             )
             .toString()
-        const [map, labels] = parserUtil.ruleAndLabelContextTypeMap(parser)
         const imports = [
             {
                 import: grammar,
@@ -94,14 +103,19 @@ export class AntlrCompiler {
                     : `./${grammar}Parser`
             }
         ]
-        const methods = _.map([...parser.ruleNames, ...labels], rule => {
-            const capitializeRule = this.capitalize(rule)
-            const enter = 'enter' + capitializeRule
-            const exit = 'exit' + capitializeRule
-            const argType = grammar + '.' + map.get(rule)
-            const returnType = 'void'
-            return { enter, exit, argType, returnType }
-        })
+
+        const methods = _.map(
+            [...parser.ruleNames, ...Object.keys(parser.labels)],
+            rule => {
+                const ruleName = rule.startsWith('#') ? rule.substring(1) : rule
+                const capitializeRule = this.capitalize(ruleName)
+                const enter = 'enter' + capitializeRule
+                const exit = 'exit' + capitializeRule
+                const argType = grammar + '.' + capitializeRule + 'Context'
+                const returnType = 'void'
+                return { enter, exit, argType, returnType }
+            }
+        )
         const contents = ejs.render(template, {
             _,
             capitalize: this.capitalize,
@@ -126,8 +140,6 @@ export class AntlrCompiler {
         const template = fs
             .readFileSync(path.join(__dirname, 'templates', 'visitor.d.ts.ejs'))
             .toString()
-        const [map, labels] = parserUtil.ruleAndLabelContextTypeMap(parser)
-
         const imports = [
             {
                 import: grammar,
@@ -136,13 +148,19 @@ export class AntlrCompiler {
                     : `./${grammar}Parser`
             }
         ]
-        const methods = _.map([...parser.ruleNames, ...labels], rule => {
-            return {
-                name: 'visit' + this.capitalize(rule),
-                argType: grammar + '.' + map.get(rule),
-                returnType: 'void'
+
+        const methods = _.map(
+            [...parser.ruleNames, ...Object.keys(parser.labels)],
+            rule => {
+                const ruleName = rule.startsWith('#') ? rule.substring(1) : rule
+                const capitializeRule = this.capitalize(ruleName)
+                return {
+                    name: 'visit' + capitializeRule,
+                    argType: grammar + '.' + capitializeRule + 'Context',
+                    returnType: 'void'
+                }
             }
-        })
+        )
 
         const contents = ejs.render(template, {
             _,

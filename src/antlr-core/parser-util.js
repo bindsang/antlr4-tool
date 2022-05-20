@@ -98,6 +98,28 @@ export async function readParser (grammar, parserFile) {
     const esm = await resolver.resolve()
     const Parser = esm.namespace.default
     const parser = new Parser(null)
+
+    const map = ruleToContextTypeMap(parser)
+    const list = classContextRules(parser.constructor)
+    const ruleClsList = [...map.values()]
+    const labels = {}
+    for (const cls of list) {
+        const clsName = cls.name
+        if (ruleClsList.includes(clsName)) {
+            continue
+        }
+
+        // '#' 定义的label 类
+        if (cls.name.endsWith('Context')) {
+            const label = clsName.replace(/Context$/, '')
+            labels['#' + label] = {
+                clsName,
+                superName: Object.getPrototypeOf(cls).name
+            }
+        }
+    }
+
+    parser.labels = labels
     return parser
 }
 
@@ -130,27 +152,6 @@ export function contextToRuleMap (parser) {
     })
 
     return map
-}
-
-export function ruleAndLabelContextTypeMap (parser) {
-    const map = ruleToContextTypeMap(parser)
-    const list = classContextRules(parser.constructor)
-    const ruleClsList = [...map.values()]
-    const labels = []
-    for (const cls of list) {
-        const clsName = cls.name
-        if (ruleClsList.includes(clsName)) {
-            continue
-        }
-
-        // '#' 定义的label 类
-        if (cls.name.endsWith('Context')) {
-            const label = clsName.replace(/Context$/, '')
-            map.set(label, clsName)
-            labels.push(label)
-        }
-    }
-    return [map, labels]
 }
 
 export function ruleToContextTypeMap (parser) {
@@ -203,7 +204,8 @@ export function parserMembers (parser) {
  * @returns [...,{id: string, type: string}]
  */
 export function contextObjectAst (parser) {
-    const contextTypes = classContextRules(parser.constructor)
+    const parserCls = parser.constructor
+    const contextTypes = classContextRules(parserCls)
     const ruleToContextMap = ruleToContextTypeMap(parser)
     const symbols = symbolSet(parser)
 
@@ -211,7 +213,7 @@ export function contextObjectAst (parser) {
         const obj = {}
         const content = contexType.toString()
         obj.name = contexType.name
-
+        obj.superName = Object.getPrototypeOf(contexType).name
         const members = _.filter(
             util.getMembers(contexType),
             mth => mth !== 'depth'
@@ -232,7 +234,19 @@ export function contextObjectAst (parser) {
                 memberObj.args = member.args
 
                 if (ruleToContextMap.has(member.name)) {
-                    memberObj.returnType = ruleToContextMap.get(member.name)
+                    const typeName = ruleToContextMap.get(member.name)
+                    const ctxCls = parserCls[typeName]
+                    if (
+                        !!Object.getOwnPropertyDescriptor(
+                            ctxCls.prototype,
+                            'copyFrom'
+                        )
+                    ) {
+                        memberObj.genericType = `<T extends ${ctxCls.name}>`
+                        memberObj.returnType = 'T'
+                    } else {
+                        memberObj.returnType = ctxCls.name
+                    }
                 } else if (symbols.has(member.name)) {
                     memberObj.returnType = 'TerminalNode'
                 }

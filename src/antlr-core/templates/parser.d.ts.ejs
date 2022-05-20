@@ -1,12 +1,15 @@
 import { CommonTokenStream, Parser, ParserRuleContext, Token } from 'antlr4'
 import { TerminalNode } from 'antlr4/tree/Tree'
+<%_ _.each(imports, (p) => { %>
+import <%= p %> from './<%= p %>'
+<% }) %>
 
 declare namespace <%= className %> {
   <%_ _.each(contextRules, (contextRule) => { %>
-  class <%= contextRule.name %> extends ParserRuleContext {
+  class <%= contextRule.name %> extends <%= contextRule.superName %> {
   <% _.each(contextRule.members, (member) => { %>
   <%_ if (member.type === 'method') { _%>
-    <%= member.name %>(<%= member.args %>): <%= member.returnType %>
+    <%= member.name %><%- member.genericType %>(<%= member.args %>): <%= member.returnType %>
   <%_ } else { _%>
     readonly <%= member.name %>: <%= member.returnType %>
   <%_ } _%>
