@@ -80,6 +80,10 @@ export async function compile (config) {
             config.language = 'Python3'
             config.extensions = ['.py']
             return compileGrammar(config)
+        case 'go':
+            config.language = 'Go'
+            config.extensions = ['.go']
+            return compileGrammar(config)
         default:
             throw new Error(`Unsupported Language: ${config.language}`)
     }
