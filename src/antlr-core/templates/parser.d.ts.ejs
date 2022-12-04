@@ -1,5 +1,7 @@
-import { CommonTokenStream, Parser, ParserRuleContext, Token } from 'antlr4'
-import { TerminalNode } from 'antlr4/tree/Tree'
+import antlr4 from 'antlr4'
+import ParserRuleContext = antlr4.ParserRuleContext
+import Token = antlr4.Token
+import TerminalNode = antlr4.tree.TerminalNode
 <%_ _.each(imports, (p) => { %>
 import <%= p %> from './<%= p %>'
 <% }) %>
@@ -18,7 +20,7 @@ declare namespace <%= className %> {
   <% }) %>
 }
 
-declare class <%= className %> extends Parser {
+declare class <%= className %> extends antlr4.Parser {
   readonly grammarFileName: string
   readonly ruleNames: string[]
   readonly literalNames: string[]
@@ -29,7 +31,7 @@ declare class <%= className %> extends Parser {
   static readonly literalNames: string[]
   static readonly symbolicNames: string[]
 
-  constructor(input: CommonTokenStream)
+  constructor(input: antlr4.CommonTokenStream)
     <%_ _.each(symbolicNames, (sym) => { %>
     static readonly <%= sym %>: number
     <%_ }) %>

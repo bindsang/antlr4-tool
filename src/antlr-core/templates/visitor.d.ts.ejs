@@ -1,5 +1,10 @@
-import { CommonTokenStream, ParserRuleContext, Token } from 'antlr4'
-import { ErrorNode, ParseTreeVisitor, TerminalNode } from 'antlr4/tree/Tree'
+import antlr4 from 'antlr4'
+import CommonTokenStream = antlr4.CommonTokenStream
+import ParserRuleContext = antlr4.ParserRuleContext
+import Token = antlr4.Token
+import ErrorNode = antlr4.tree.ErrorNode
+import ParseTreeVisitor = antlr4.tree.ParseTreeVisitor
+import TerminalNode = antlr4.tree.TerminalNode
 <%_ _.each(imports, (i) => { _%>
 import <%- i.import %> from '<%= i.from %>'
 <%_ }); _%>

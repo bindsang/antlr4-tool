@@ -1,6 +1,6 @@
 {
   "name": "@mctech/antlr4-tool",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "An Antlr4 tool that generates both Typescript and JavaScript Antlr Parsers (Current Antlr version: 4.8)",
   "main": "src/index.js",
   "type": "module",
@@ -27,20 +27,13 @@
   ],
   "license": "ISC",
   "dependencies": {
-    "@rollup/plugin-commonjs": "^21.1.0",
-    "@rollup/plugin-node-resolve": "^13.2.0",
-    "@swc/core": "^1.2.165",
     "antlr4": "^4.10.1",
     "chalk": "^2.4.1",
     "chdir": "0.0.0",
     "commander": "^2.16.0",
     "ejs": "^2.6.1",
     "find-package-json": "^1.1.0",
-    "lodash": "^4.17.10",
-    "rollup": "^2.70.2",
-    "rollup-plugin-copy": "^3.4.0",
-    "rollup-plugin-delete": "^2.0.0",
-    "rollup-plugin-swc": "^0.2.1"
+    "lodash": "^4.17.10"
   },
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
-import { InputStream, Lexer } from 'antlr4'
+import antlr4 from 'antlr4'
 
-export default class <%= className %> extends Lexer {
+export default class <%= className %> extends antlr4.Lexer {
   static readonly channelNames: string[]
   static readonly modeNames: string[]
   static readonly literalNames: string[]
@@ -8,7 +8,7 @@ export default class <%= className %> extends Lexer {
   static readonly ruleNames: string[]
   static readonly grammarFileName: string
 
-  constructor(input: InputStream)
+  constructor(input: antlr4.InputStream)
 <%_ _.each(ruleNames, (rule) => { %>
   static readonly <%= rule %>: number
 <%_ }) %>
