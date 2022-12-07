@@ -6,6 +6,8 @@ import chalk from 'chalk'
 import { fileURLToPath } from 'url'
 import { compile } from './compile.js'
 import finder from 'find-package-json'
+import * as https from 'https'
+import * as constants from './antlr-core/constants.js'
 
 const log = console.log
 
@@ -63,7 +65,36 @@ _.each(antlrGrammars, file => {
     }
 })
 
+
+async function ensureAntlrJar () {
+  const jarFile = constants.ANTLR_JAR
+  log(jarFile)
+  if (fs.existsSync(jarFile)) {
+      return
+  }
+
+  const { dir, base } = path.parse(jarFile)
+  if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true })
+  }
+  log(`downloading ANTLR tool: ${base}`)
+  const tmpFile = jarFile + '.tmp'
+  const antlrJarUrl = `https://www.antlr.org/download/antlr-${constants.ANTLR_VERSION}-complete.jar`
+  await new Promise((resolve, reject) => {
+      const req = https.get(antlrJarUrl, res => {
+          const output = fs.createWriteStream(tmpFile)
+          res.on('error', reject)
+              .pipe(output)
+              .on('error', reject)
+              .on('close', resolve)
+      })
+      req.on('error', reject)
+  })
+  fs.renameSync(tmpFile, jarFile)
+}
+
 async function main () {
+    await ensureAntlrJar()
     const compileResults = await compile(config)
     _.each(compileResults, (files, grammar) => {
         _.each(files, file => {
