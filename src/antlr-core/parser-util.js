@@ -254,17 +254,34 @@ export function contextObjectAst (parser) {
                     memberObj.returnType += '[]'
                 }
             } else {
-                /** @type {string} */
+                // antlr4语法中定义的label生成的成员字段一般有两种格式，单值和数组
+                //   单值格式  ->    this.ucText = null; // TextStringLiteralContext
+                //   数组格式  ->    this.texts = []; // of TextStringLiteralContexts
+                // 实际测试过程中以上两种情况分别还有一种是在类型后面多出一个';'，
+                // 目前初步判断是某条规则里存在 '#' 定义的子类时，在其它规则或其自身里用label定义了成员变量方式引用该规则的时候
+                // 生成的成员变量的类型描述后面就会出现';'符号
+                //
+                // 另外还有一种locals定义的局部变量或return定义的返回字段，
+                // 这种也会在构造函数中生成字段。但是这种方式生成的字段是没有注释信息的，
+                // 也就无法生成类型描述，正则表达式就匹配不到
                 const pattern = new RegExp(
-                    `this\\.${member.name}\\s*=\\s*(null|\\[]);.+?//\\s+(of\\s+)?(\\w+);?$`,
-                    'im'
+                    String.raw`^\s*this\.${member.name}\s*=\s*(?<value>null|\[]);\s*//\s+(of\s+)?(?<typeInfo>\w+)(?<abstract>;)?$`,
+                    'm'
                 )
                 const matcher = pattern.exec(content)
-                let memberType = matcher[3]
-                memberObj.returnType =
-                    matcher[1] === 'null'
-                        ? memberType
-                        : memberType.substring(0, memberType.length - 1) + '[]'
+                if (matcher) {
+                    let typeInfo = matcher.groups.typeInfo
+                    memberObj.returnType =
+                        matcher.groups.value === 'null'
+                            ? // typeInfo就是类型名称
+                              typeInfo
+                            : // typeInfo是类型名称后面加个's'，去掉末尾的's'后再加上'[]'生成对应的数组类型
+                              typeInfo.slice(0, -1) + '[]'
+
+                    // if(matcher.groups.abstract) {
+                    //   // 当前匹配到的类型是抽象类
+                    // }
+                }
             }
             return memberObj
         }).sort((a, b) => {

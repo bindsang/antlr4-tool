@@ -3,7 +3,8 @@ import _ from 'lodash'
 import { AntlrCompiler } from './antlr-compiler.js'
 import * as constants from './constants.js'
 
-/** @typedef {(compiler: AntlrCompiler) => Promise<{
+/**
+ * @typedef {(compiler: AntlrCompiler) => Promise<{
  *   grammar: string,
  *   filesGenerated: string[]
  * }>} AsyncCompileFunction
