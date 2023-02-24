@@ -265,22 +265,35 @@ export function contextObjectAst (parser) {
                 // 这种也会在构造函数中生成字段。但是这种方式生成的字段是没有注释信息的，
                 // 也就无法生成类型描述，正则表达式就匹配不到
                 const pattern = new RegExp(
-                    String.raw`^\s*this\.${member.name}\s*=\s*(?<value>null|\[]);\s*//\s+(of\s+)?(?<typeInfo>\w+)(?<abstract>;)?$`,
+                    String.raw`^\s*this\.${member.name}\s*=\s*(?<value>.*?);?(\s*//\s+(of\s+)?(?<typeInfo>\w+)(?<abstract>;)?)?$`,
                     'm'
                 )
                 const matcher = pattern.exec(content)
                 if (matcher) {
-                    let typeInfo = matcher.groups.typeInfo
-                    memberObj.returnType =
-                        matcher.groups.value === 'null'
-                            ? // typeInfo就是类型名称
-                              typeInfo
-                            : // typeInfo是类型名称后面加个's'，去掉末尾的's'后再加上'[]'生成对应的数组类型
-                              typeInfo.slice(0, -1) + '[]'
+                    const { value, typeInfo } = matcher.groups
+                    if (typeInfo) {
+                        memberObj.returnType =
+                            value === '[]'
+                                ? // typeInfo是类型名称后面加个's'，去掉末尾的's'后再加上'[]'生成对应的数组类型
+                                  typeInfo.slice(0, -1) + '[]'
+                                : // typeInfo就是类型名称
+                                  typeInfo
 
-                    // if(matcher.groups.abstract) {
-                    //   // 当前匹配到的类型是抽象类
-                    // }
+                        // if(matcher.groups.abs) {
+                        //   // 当前匹配到的类型是抽象类
+                        // }
+                    } else {
+                        const ch = value[0]
+                        if (ch === '"' || ch === "'" || ch === '`') {
+                            memberObj.returnType = 'string'
+                        } else if (value === 'true' || value === 'false') {
+                            memberObj.returnType = 'boolean'
+                        } else if (!Number.isNaN(Number(value))) {
+                            memberObj.returnType = 'number'
+                        } else {
+                            memberObj.returnType = 'any'
+                        }
+                    }
                 }
             }
             return memberObj

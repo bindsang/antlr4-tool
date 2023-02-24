@@ -22,6 +22,7 @@ export function getMembers (cls) {
         ...Object.keys(inst),
         ...Object.getOwnPropertyNames(cls.prototype)
     ]
+
     for (const id of props) {
         if (id.startsWith('_') || ignores.includes(id)) {
             continue
@@ -58,10 +59,11 @@ export function getMembers (cls) {
                         }
                     }
                     break
-                case 'object':
-                    result.push({ name: id, type: 'field' })
-                    break
+                // case 'object':
+                //     result.push({ name: id, type: 'field' })
+                //     break
                 default:
+                    result.push({ name: id, type: 'field' })
                     break
             }
         } catch (err) {}
