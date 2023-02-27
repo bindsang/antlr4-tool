@@ -10,3 +10,4 @@ dist
 *.iml
 yarn.lock
 package-lock.json
+src/bin/*.jar

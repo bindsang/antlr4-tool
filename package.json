@@ -11,7 +11,7 @@
     "node": ">=14"
   },
   "scripts": {
-    "test": "node --experimental-import-meta-resolve --experimental-vm-modules ./src/cli.js -l ts -o ./src/test ./samples/c/ImpalaLexer.g4 ./samples/c/ImpalaParser.g4"
+    "test": "node --experimental-import-meta-resolve --experimental-vm-modules ./src/cli.js -l ts -o ./src/test ./samples/c/C.g4"
   },
   "files": [
     "src",
